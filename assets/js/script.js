@@ -237,9 +237,9 @@ function floralSummaryHTML(a) {
 
     let grandTotal = taxes + flowerTotal;
 
-    let delivTail = `<tr><td>Delivery</td><td></td><td></td><td>$${delivery.toFixed(2)}</td></tr>`;
-    let taxesTail = `<tr><td>MD Sales Tax (6%)</td><td></td><td></td><td>$${taxes.toFixed(2)}</td></tr>`;
-    let tableTail = `<tr><td></td><td></td><td>Total</td><td>$${grandTotal.toFixed(2)}</td></tr></tbody></table>`;
+    let delivTail = `<tr><td>Delivery</td><td></td><td></td><td id="dlv">$${delivery.toFixed(2)}</td></tr>`;
+    let taxesTail = `<tr><td>MD Sales Tax (6%)</td><td></td><td></td><td id="txs">$${taxes.toFixed(2)}</td></tr>`;
+    let tableTail = `<tr><td></td><td></td><td>Total</td><td id="total">$${grandTotal.toFixed(2)}</td></tr></tbody></table>`;
 
     
 
@@ -344,6 +344,8 @@ $('#med-bud').on('change', function(e) {
 })
 
 // Additional Needs
+let curNeeds = [];
+
 function createNeedsHTML(needs) {
     let output = '';
     for (i = 0; i < needs.length; i++) {
@@ -380,6 +382,8 @@ function createAddtlNeedsSummary() {
         }
     }
 
+    curNeeds = confirmedNeeds;
+
     let x = createNeedsHTML(confirmedNeeds);
     $('#adtl-needs').html(x || '');
 }
@@ -389,34 +393,71 @@ $('input:checkbox').on('change', function(e) {
 });
 
 // Create email
+function flowersForEmail() {
+    let outputArr = ["Qty Item, Subtotal\n"];
+    for (const [key, value] of priceMap.entries()) {
+        if (priceMap.has(key) && flowersMap.get(key) && flowersMap.get(key) > 0) {
+            let q = flowersMap.get(key);
 
-
+            let priceStr = '$' + q*parseInt(value).toString();
+            
+            let qStr = q.toString();
+            
+            outputArr.push(`${qStr}x ${key}, ${priceStr}\n`);
+        }
+    }
+    let output = outputArr.join('');
+    return output 
+}
 
 function mailer() {
-    let coupleName = $('#coupleName').text();
-    let body = `
-    Quote for ${coupleName}:
+    let coupleName = $('#coupleName').val();
+    let date = $('#wedDate').val();
+    let location = $('#wedLoc').val();
+    let emailAddr = $('#emailAddress').val();
+    let vision = [
+        $('#word1').val(),
+        $('#word2').val(),
+        $('#word3').val(),
+    ];
+    let colors = [
+        $('#color1').val(),
+        $('#color2').val(),
+        $('#color3').val(),
+    ];
 
-    Date: 
-    Location: 
-    Email Address: 
-
-    Color Palettes: 
-
-    Vision: 
-    Preferred Colors:
-
-    Delivery: 
+    let d;
+    if ($('#delivery-method').text().substring(0,4) == 'Free') {
+        d = 'No';
+    } else if ($('#delivery-method').text().substring(0,4) == 'Drop') {
+        d = 'Yes';
+    } else {
+        d = 'Unsure';
+    }
 
 
-    `;
-    let colorPalettes = '';
-    let vision = '';
-    let delivery = '';
-    let flowers = '';
-    let needs = '';
+    let body = `Quote for ${coupleName}:
 
-    let mailtoString = `mailto:jtwilson3907+test@gmail.com&subject=WILD VIOLETS for ${coupleName}&body=${body}`
+Date: ${date}
+Location: ${location}
+Email Address: ${emailAddr}
+
+Color Palettes: ${paletteOrder.join(' ')}
+
+Vision: ${vision.join(' ')}
+Preferred Colors: ${colors.join(' ')}
+
+Delivery: ${d}, ${$('#dlv').text()}
+
+Flowers:
+${flowersForEmail()}
+Taxes: ${$('#txs').text()}
+
+Est Total: ${$('#total').text()}
+
+Additional Needs: ${curNeeds}`;
+
+    let mailtoString = `mailto:violetfloraldesigns+wildviolets@gmail.com?subject=WILD VIOLETS Inquiry for ${coupleName}&body=${body}`
 
     window.open(encodeURI(mailtoString), '_self');
 }
